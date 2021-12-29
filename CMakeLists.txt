@@ -18,6 +18,8 @@ set(PUBLIC_HEADERS
 
 set(SOURCES
     src/Schema_JSON_Conversion.cpp
+    src/IDataType.h
+    src/DataTypes.h
 )
 
 set(LIBRARIES arrow_shared)
@@ -39,7 +41,10 @@ install(TARGETS ${SCHEMA_JSON_LIB} LIBRARY DESTINATION lib)
 ##################################
 # UNIT TEST
 ##################################
-#enable_testing()
-#find_package(GTest REQUIRED)
-#add_executable(test test/test.cpp)
-#target_link_libraries(test GTest::GTest GTest::Main)
+enable_testing()
+find_package(GTest REQUIRED)
+add_executable(Test
+    test/test.cpp
+)
+target_include_directories(Test SYSTEM PUBLIC src/)
+target_link_libraries(Test GTest::GTest GTest::Main arrow_shared ${SCHEMA_JSON_LIB})

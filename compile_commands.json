@@ -1,0 +1,12 @@
+[
+{
+  "directory": "/home/khanhnguyen/workspaces/cpp/Arrow_Schema_JSON_conversion/build",
+  "command": "/usr/bin/c++   -isystem /home/khanhnguyen/workspaces/cpp/Arrow_Schema_JSON_conversion/src    -pthread -std=gnu++17 -o CMakeFiles/Test.dir/test/test.cpp.o -c /home/khanhnguyen/workspaces/cpp/Arrow_Schema_JSON_conversion/test/test.cpp",
+  "file": "/home/khanhnguyen/workspaces/cpp/Arrow_Schema_JSON_conversion/test/test.cpp"
+},
+{
+  "directory": "/home/khanhnguyen/workspaces/cpp/Arrow_Schema_JSON_conversion/build",
+  "command": "/usr/bin/c++  -Dschema_json_lib_EXPORTS  -fPIC   -std=gnu++17 -o CMakeFiles/schema-json-lib.dir/src/Schema_JSON_Conversion.cpp.o -c /home/khanhnguyen/workspaces/cpp/Arrow_Schema_JSON_conversion/src/Schema_JSON_Conversion.cpp",
+  "file": "/home/khanhnguyen/workspaces/cpp/Arrow_Schema_JSON_conversion/src/Schema_JSON_Conversion.cpp"
+}
+]
