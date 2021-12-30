@@ -46,6 +46,7 @@ arrow::Result<std::shared_ptr<arrow::DataType>> arrow::UuidType::Deserialize(
 
 TEST(SchemaToJSON, BasicTypes)
 {
+    GTEST_SKIP();
     auto schema =
         arrow::schema({ arrow::field("IntField", arrow::int32()),
                         arrow::field("ExtensionField", arrow::uuid())
@@ -92,4 +93,56 @@ TEST(SchemaToJSON, BasicTypes)
 
     // std::cout << std::setw(4) << expected << std::endl;
     std::cout << std::setw(4) << actual << std::endl;
+}
+
+TEST(JSONToSchema, BasicTest) {
+    //GTEST_SKIP();
+    auto schema =
+        arrow::schema({ arrow::field("IntField", arrow::int32()),
+                        arrow::field("FloatField", arrow::float32()),
+                        arrow::field("DurationField",
+                                     arrow::duration(arrow::TimeUnit::SECOND))
+                            ->WithMetadata(arrow::KeyValueMetadata::Make(
+                                { "k1", "k2" }, { "v1", "v2" })) })
+            ->WithMetadata(arrow::KeyValueMetadata::Make(
+                { "key1", "key2", "key3" }, { "value1", "value2", "value3" }));
+
+    SchemaJSONConversion convertor{};
+    auto js = convertor.ToJson(schema);
+    std::cout << "Origin JSON\n";
+    std::cout << std::setw(4) << js << std::endl;
+    auto newSchema = convertor.ToSchema(js);
+    auto newJs = convertor.ToJson(newSchema);
+    std::cout << "New JSON\n";
+    std::cout << std::setw(4) << js << std::endl;
+    ASSERT_EQ(js, newJs);
+    ASSERT_TRUE(schema->Equals(newSchema));
+}
+
+TEST(JSONToSchema, ListType) {
+    auto listField1 = arrow::field("ListField1", arrow::list(arrow::int32()));
+    auto listField2 = arrow::field("ListField1", arrow::list(arrow::field("ChildField", arrow::utf8())));
+    auto schema = arrow::schema({listField1, listField2});
+
+    SchemaJSONConversion convertor{};
+    auto js = convertor.ToJson(schema);
+    std::cout << std::setw(4) << js << std::endl;
+}
+
+TEST(JSONToSchema, StructType)
+{
+    auto schema = arrow::schema({ arrow::field(
+        "StructField",
+        arrow::struct_(
+            { arrow::field("ChildInt", arrow::int32()),
+              arrow::field("ChildFloat", arrow::float32()),
+              arrow::field("ChildList", arrow::list(arrow::boolean())),
+              arrow::field("ChildStruct",
+                           arrow::struct_({
+                               arrow::field("ChildOfChild", arrow::int64()),
+                           })) })) });
+
+    SchemaJSONConversion convertor{};
+    auto js = convertor.ToJson(schema);
+    std::cout << std::setw(4) << js << std::endl;
 }
