@@ -189,15 +189,15 @@ const json marshalJSON(const std::shared_ptr<arrow::Field> field) {
         //case arrow::Type::DICTIONARY:
         case arrow::Type::MAP:
         {
-            auto keySorted = static_cast<arrow::MapType*>(fieldType.get())->keys_sorted();
+            auto mapType = static_cast<arrow::MapType*>(fieldType.get());
+            auto keySorted = mapType->keys_sorted();
             type = std::make_shared<MapJSON>(datatype::kMapType, keySorted);
-            break;
-        }
-        //case arrow::Type::EXTENSION:
-        case arrow::Type::FIXED_SIZE_LIST:
-        {
-            auto listSize = static_cast<arrow::FixedSizeListType*>(fieldType.get())->list_size();
-            type = std::make_shared<ListSizeJSON>(datatype::kFixedSizeListType, listSize);
+            auto keyJson = marshalJSON(mapType->key_field());
+            auto itemJson = marshalJSON(mapType->item_field());
+            result["children"].push_back({
+                { "key", keyJson },
+                { "item", itemJson },
+            });
             break;
         }
         case arrow::Type::DURATION:
@@ -221,9 +221,6 @@ const json marshalJSON(const std::shared_ptr<arrow::Field> field) {
             }
             break;
         }
-        //case arrow::Type::LARGE_STRING:
-        //case arrow::Type::LARGE_BINARY:
-        //case arrow::Type::LARGE_LIST:
         case arrow::Type::INTERVAL_MONTH_DAY_NANO:
             type = std::make_shared<UnitZoneJSON>(datatype::kIntervalType, datatype::kMonthDayNanoIntervalUnit);
             break;
@@ -391,24 +388,53 @@ const std::shared_ptr<arrow::Field> unmarshalJSON(const json& jsonField) {
             }
             break;
         }
-        // TODO Handle list
         case datatype::TYPE_NAME_LIST:
+        {
+            if (!jsonField.contains("children")) {
+                std::cout << fieldName << " has no children\n";
+                // TODO Return error here?
+                resultType = arrow::list(arrow::null());
+                break;
+            }
+            auto field = unmarshalJSON(jsonField.at("children")[0]);
+            resultType = arrow::list(field);
             break;
-        // TODO Handle map
+        }
         case datatype::TYPE_NAME_MAP:
+        {
+            if (!jsonField.contains("children")) {
+                std::cout << fieldName << " has no children\n";
+                // TODO Return error here?
+                resultType = arrow::map(arrow::null(), arrow::null());
+                break;
+            }
+            auto keySorted = jsonField.at("type").at("keySorted").get<bool>();
+            auto keyField = unmarshalJSON(jsonField.at("children")[0].at("key"));
+            auto itemField = unmarshalJSON(jsonField.at("children")[0].at("item"));
+            resultType = arrow::map(keyField->type(), itemField, keySorted);
             break;
-        // TODO Handle struct
+        }
         case datatype::TYPE_NAME_STRUCT:
+        {
+            if (!jsonField.contains("children")) {
+                std::cout << fieldName << " has no children\n";
+                resultType = arrow::struct_({});
+                break;
+            }
+            std::vector<std::shared_ptr<arrow::Field>> fields{};
+            for (auto childJson : jsonField.at("children")) {
+                auto childField = unmarshalJSON(childJson);
+                fields.push_back(childField);
+            }
+            resultType = arrow::struct_(fields);
             break;
+        }
         case datatype::TYPE_NAME_FIXED_SIZE_BINARY:
         {
             auto byteWidth = jsonField.at("type").at("byteWidth").get<int>();
             resultType = arrow::fixed_size_binary(byteWidth);
             break;
         }
-        // TODO Handle fixed size list
-        case datatype::TYPE_NAME_FIXED_SIZE_LIST:
-            break;
         case datatype::TYPE_NAME_INTERVAL:
         {
             auto unitStr = jsonField.at("type").at("unit").get<std::string>();
@@ -550,6 +576,7 @@ const std::shared_ptr<arrow::Schema> SchemaJSONConversion::ToSchema(
         auto field = unmarshalJSON(fieldJson);
         fields.push_back(field);
     }
+
 
     if (!schemaJson.contains("metadata")) {
         return arrow::schema(fields);

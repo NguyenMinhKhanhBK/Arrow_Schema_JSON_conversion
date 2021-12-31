@@ -159,26 +159,6 @@ private:
     bool mKeySorted{};
 };
 
-class ListSizeJSON : public IDataType {
-public:
-    ListSizeJSON(const std::string& name, int listSize)
-        : mName{ name }
-        , mListSize{ listSize } {};
-
-    ~ListSizeJSON() = default;
-
-    const json MarshalJSON() {
-        return {
-            { "name", mName },
-            { "listSize", mListSize },
-        };
-    }
-
-private:
-    std::string mName{};
-    int mListSize{};
-};
-
 namespace datatype {
 const std::string kNullType = "null";
 const std::string kBoolType = "bool";
@@ -195,7 +175,6 @@ const std::string kDecimalType = "decimal";
 const std::string kListType = "list";
 const std::string kStructType = "struct";
 const std::string kMapType = "map";
-const std::string kFixedSizeListType = "fixedsizelist";
 const std::string kDurationType = "duration";
 
 enum TypeName {
@@ -215,7 +194,6 @@ enum TypeName {
     TYPE_NAME_LIST,
     TYPE_NAME_STRUCT,
     TYPE_NAME_MAP,
-    TYPE_NAME_FIXED_SIZE_LIST,
     TYPE_NAME_DURATION,
 };
 
@@ -237,7 +215,6 @@ TypeName GetTypeFromString(const std::string& type) {
         {kListType, TYPE_NAME_LIST},
         {kStructType, TYPE_NAME_STRUCT},
         {kMapType, TYPE_NAME_MAP},
-        {kFixedSizeListType, TYPE_NAME_FIXED_SIZE_LIST},
         {kDurationType, TYPE_NAME_DURATION},
     };
     auto item = hashMap.find(type);

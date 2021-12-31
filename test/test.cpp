@@ -96,7 +96,7 @@ TEST(SchemaToJSON, BasicTypes)
 }
 
 TEST(JSONToSchema, BasicTest) {
-    //GTEST_SKIP();
+    GTEST_SKIP();
     auto schema =
         arrow::schema({ arrow::field("IntField", arrow::int32()),
                         arrow::field("FloatField", arrow::float32()),
@@ -119,7 +119,8 @@ TEST(JSONToSchema, BasicTest) {
     ASSERT_TRUE(schema->Equals(newSchema));
 }
 
-TEST(JSONToSchema, ListType) {
+TEST(SchemaToJSON, ListType) {
+    GTEST_SKIP();
     auto listField1 = arrow::field("ListField1", arrow::list(arrow::int32()));
     auto listField2 = arrow::field("ListField1", arrow::list(arrow::field("ChildField", arrow::utf8())));
     auto schema = arrow::schema({listField1, listField2});
@@ -129,8 +130,9 @@ TEST(JSONToSchema, ListType) {
     std::cout << std::setw(4) << js << std::endl;
 }
 
-TEST(JSONToSchema, StructType)
+TEST(SchemaToJSON, StructType)
 {
+    GTEST_SKIP();
     auto schema = arrow::schema({ arrow::field(
         "StructField",
         arrow::struct_(
@@ -144,5 +146,61 @@ TEST(JSONToSchema, StructType)
 
     SchemaJSONConversion convertor{};
     auto js = convertor.ToJson(schema);
+    std::cout << "Original: \n" << std::setw(4) << js << std::endl;
+}
+
+TEST(SchemaToJSON, MapType) {
+    GTEST_SKIP();
+    auto schema = arrow::schema({
+        arrow::field("MapField_Int_Utf8",
+                     arrow::map(arrow::int32(), arrow::utf8())),
+        arrow::field(
+            "MapField_Int_Struct",
+            arrow::map(arrow::int32(),
+                       arrow::struct_({
+                           arrow::field("ChildInt", arrow::int32()),
+                           arrow::field("ChildFloat", arrow::float64()),
+                       }))),
+    });
+
+    SchemaJSONConversion convertor{};
+    auto js = convertor.ToJson(schema);
     std::cout << std::setw(4) << js << std::endl;
+}
+
+TEST(JSONToSchema, StructTest)
+{
+    GTEST_SKIP();
+    auto schema = arrow::schema({ arrow::field(
+        "StructField",
+        arrow::struct_(
+            { arrow::field("IntField", arrow::int32()),
+              arrow::field("FloatField", arrow::float16()),
+              arrow::field("ListField", arrow::list(arrow::uint8())),
+              arrow::field(
+                  "StructChildField",
+                  arrow::struct_(
+                      { arrow::field("ChildInt", arrow::uint16()),
+                        arrow::field("ChildFloat", arrow::float64()) })) })) });
+    SchemaJSONConversion convertor{};
+    auto originalJson = convertor.ToJson(schema);
+    auto newSchema = convertor.ToSchema(originalJson);
+    std::cout << "New Json\n" << std::setw(4) << convertor.ToJson(newSchema) << std::endl;
+    ASSERT_TRUE(newSchema->Equals(schema));
+    ASSERT_TRUE(schema->Equals(newSchema));
+    // auto newJson = convertor.ToJson(newSchema);
+}
+
+TEST(JSONToSchema, MapTest)
+{
+    auto schema = arrow::schema({
+        arrow::field("MapField", arrow::map(arrow::int16(), arrow::utf8())),
+    });
+    SchemaJSONConversion convertor{};
+    auto originalJson = convertor.ToJson(schema);
+    auto newSchema = convertor.ToSchema(originalJson);
+    std::cout << "New Json\n" << std::setw(4) << convertor.ToJson(newSchema) << std::endl;
+    ASSERT_TRUE(newSchema->Equals(schema));
+    ASSERT_TRUE(schema->Equals(newSchema));
+    // auto newJson = convertor.ToJson(newSchema);
 }
