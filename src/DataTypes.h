@@ -1,8 +1,9 @@
 #ifndef _DATA_TYPES_H_
 #define _DATA_TYPES_H_
 
-#include "IDataType.h"
 #include <arrow/type.h>
+
+#include "IDataType.h"
 
 class NameJSON : public IDataType {
 public:
@@ -14,7 +15,6 @@ public:
     const json MarshalJSON() override {
         return {
             { "name", mName },
-            //{"children", {{}}},
         };
     }
 
@@ -61,8 +61,8 @@ public:
 
     const json MarshalJSON() override {
         return {
-            { "name", mName }, { "precision", mPrecision },
-            //{"children", {{}}},
+            { "name", mName },
+            { "precision", mPrecision },
         };
     }
 
@@ -197,32 +197,31 @@ enum TypeName {
     TYPE_NAME_DURATION,
 };
 
-
 TypeName GetTypeFromString(const std::string& type) {
-    static const std::unordered_map<std::string, TypeName> hashMap {
-        {kNullType, TYPE_NAME_NULL},
-        {kBoolType, TYPE_NAME_BOOL},
-        {kIntType, TYPE_NAME_INT},
-        {kFloatingPointType, TYPE_NAME_FLOATING_POINT},
-        {kUtf8Type, TYPE_NAME_UTF8},
-        {kBinaryType, TYPE_NAME_BINARY},
-        {kFixedSizeBinaryType, TYPE_NAME_FIXED_SIZE_BINARY},
-        {kDateType, TYPE_NAME_DATE},
-        {kTimestampType, TYPE_NAME_TIMESTAMP},
-        {kTimeType, TYPE_NAME_TIME},
-        {kIntervalType, TYPE_NAME_INTERVAL},
-        {kDecimalType, TYPE_NAME_DECIMAL},
-        {kListType, TYPE_NAME_LIST},
-        {kStructType, TYPE_NAME_STRUCT},
-        {kMapType, TYPE_NAME_MAP},
-        {kDurationType, TYPE_NAME_DURATION},
+    static const std::unordered_map<std::string, TypeName> hashMap{
+        { kNullType, TYPE_NAME_NULL },
+        { kBoolType, TYPE_NAME_BOOL },
+        { kIntType, TYPE_NAME_INT },
+        { kFloatingPointType, TYPE_NAME_FLOATING_POINT },
+        { kUtf8Type, TYPE_NAME_UTF8 },
+        { kBinaryType, TYPE_NAME_BINARY },
+        { kFixedSizeBinaryType, TYPE_NAME_FIXED_SIZE_BINARY },
+        { kDateType, TYPE_NAME_DATE },
+        { kTimestampType, TYPE_NAME_TIMESTAMP },
+        { kTimeType, TYPE_NAME_TIME },
+        { kIntervalType, TYPE_NAME_INTERVAL },
+        { kDecimalType, TYPE_NAME_DECIMAL },
+        { kListType, TYPE_NAME_LIST },
+        { kStructType, TYPE_NAME_STRUCT },
+        { kMapType, TYPE_NAME_MAP },
+        { kDurationType, TYPE_NAME_DURATION },
     };
     auto item = hashMap.find(type);
     if (item != hashMap.end()) {
-        return item->second; 
+        return item->second;
     }
     return TYPE_NAME_NOT_SET;
-} 
+}
 
 const std::string kPrecisionHalf = "HALF";
 const std::string kPrecisionSingle = "SINGLE";
@@ -236,10 +235,10 @@ enum Precision {
 };
 
 Precision GetPrecisionFromString(const std::string& precision) {
-    static const std::unordered_map<std::string, Precision> hashMap {
-        {kPrecisionHalf, PRECISION_HALF},
-        {kPrecisionSingle, PRECISION_SINGLE},
-        {kPrecisionDouble, PRECISION_DOUBLE},
+    static const std::unordered_map<std::string, Precision> hashMap{
+        { kPrecisionHalf, PRECISION_HALF },
+        { kPrecisionSingle, PRECISION_SINGLE },
+        { kPrecisionDouble, PRECISION_DOUBLE },
     };
     auto item = hashMap.find(precision);
     if (item != hashMap.end()) {
@@ -264,12 +263,12 @@ enum DateTimeUnit {
 };
 
 DateTimeUnit GetUnitFromString(const std::string& unit) {
-    static const std::unordered_map<std::string, DateTimeUnit> hashMap {
-        {kDayUnit, DATE_TIME_UNIT_DAY},
-        {kSecondUnit, DATE_TIME_UNIT_SECOND},
-        {kMillisecondUnit, DATE_TIME_UNIT_MILLISECOND},
-        {kMicrosecondUnit, DATE_TIME_UNIT_MICROSECOND},
-        {kNanosecondUnit, DATE_TIME_UNIT_NANOSECOND},
+    static const std::unordered_map<std::string, DateTimeUnit> hashMap{
+        { kDayUnit, DATE_TIME_UNIT_DAY },
+        { kSecondUnit, DATE_TIME_UNIT_SECOND },
+        { kMillisecondUnit, DATE_TIME_UNIT_MILLISECOND },
+        { kMicrosecondUnit, DATE_TIME_UNIT_MICROSECOND },
+        { kNanosecondUnit, DATE_TIME_UNIT_NANOSECOND },
     };
     auto item = hashMap.find(unit);
     if (item != hashMap.end()) {
@@ -290,10 +289,10 @@ enum IntervalUnit {
 };
 
 IntervalUnit GetIntervalUnitFromString(const std::string& unit) {
-    static const std::unordered_map<std::string, IntervalUnit> hashMap {
-        {kYearMonthIntervalUnit, INTERVAL_UNIT_YEAR_MONTH},
-        {kDayTimeIntervalUnit, INTERVAL_UNIT_DAY_TIME},
-        {kMonthDayNanoIntervalUnit, INTERVAL_UNIT_MONTH_DAY_NANO},
+    static const std::unordered_map<std::string, IntervalUnit> hashMap{
+        { kYearMonthIntervalUnit, INTERVAL_UNIT_YEAR_MONTH },
+        { kDayTimeIntervalUnit, INTERVAL_UNIT_DAY_TIME },
+        { kMonthDayNanoIntervalUnit, INTERVAL_UNIT_MONTH_DAY_NANO },
     };
     auto item = hashMap.find(unit);
     if (item != hashMap.end()) {
@@ -305,6 +304,6 @@ IntervalUnit GetIntervalUnitFromString(const std::string& unit) {
 #define EXTENSION_TYPE_KEY_NAME "ARROW:extension:name"
 #define EXTENSION_METADATA_KEY_NAME "ARROW:extension:metadata"
 
-}
+} // namespace datatype
 
 #endif // _DATA_TYPES_H_

@@ -1,24 +1,21 @@
 #ifndef _TEST_HELPER_H_
 #define _TEST_HELPER_H_
 
+#include <arrow/testing/extension_type.h>
 #include <arrow/type.h>
 #include <arrow/util/key_value_metadata.h>
-#include <arrow/testing/extension_type.h>
 #include <arrow/util/logging.h>
 
-std::shared_ptr<arrow::DataType> arrow::uuid()
-{
+std::shared_ptr<arrow::DataType> arrow::uuid() {
     return std::make_shared<arrow::UuidType>();
 }
 
-bool arrow::UuidType::ExtensionEquals(const ExtensionType& other) const
-{
+bool arrow::UuidType::ExtensionEquals(const ExtensionType& other) const {
     return (other.extension_name() == this->extension_name());
 }
 
 std::shared_ptr<arrow::Array> arrow::UuidType::MakeArray(
-    std::shared_ptr<ArrayData> data) const
-{
+    std::shared_ptr<ArrayData> data) const {
     DCHECK_EQ(data->type->id(), Type::EXTENSION);
     DCHECK_EQ("uuid",
               static_cast<const ExtensionType&>(*data->type).extension_name());
@@ -27,8 +24,7 @@ std::shared_ptr<arrow::Array> arrow::UuidType::MakeArray(
 
 arrow::Result<std::shared_ptr<arrow::DataType>> arrow::UuidType::Deserialize(
     std::shared_ptr<DataType> storage_type,
-    const std::string& serialized) const
-{
+    const std::string& serialized) const {
     if (serialized != "uuid-serialized") {
         return Status::Invalid(
             "Type identifier did not match: '", serialized, "'");
@@ -41,15 +37,13 @@ arrow::Result<std::shared_ptr<arrow::DataType>> arrow::UuidType::Deserialize(
 }
 
 namespace helper {
-std::shared_ptr<arrow::Schema> makeNullSchema()
-{
+std::shared_ptr<arrow::Schema> makeNullSchema() {
     return arrow::schema({ arrow::field("nulls", arrow::null()) })
         ->WithMetadata(arrow::KeyValueMetadata::Make({ "k1", "k2", "k3" },
                                                      { "v1", "v2", "v3" }));
 }
 
-std::shared_ptr<arrow::Schema> makePrimitiveSchema()
-{
+std::shared_ptr<arrow::Schema> makePrimitiveSchema() {
     return arrow::schema({
                              arrow::field("bools", arrow::boolean()),
                              arrow::field("int8s", arrow::int8()),
@@ -69,8 +63,7 @@ std::shared_ptr<arrow::Schema> makePrimitiveSchema()
                                                      { "v1", "v2", "v3" }));
 }
 
-std::shared_ptr<arrow::Schema> makeStructSchema()
-{
+std::shared_ptr<arrow::Schema> makeStructSchema() {
     return arrow::schema({ arrow::field(
         "struct_nullable",
         arrow::struct_({
@@ -79,22 +72,19 @@ std::shared_ptr<arrow::Schema> makeStructSchema()
         })) });
 }
 
-std::shared_ptr<arrow::Schema> makeListSchema()
-{
+std::shared_ptr<arrow::Schema> makeListSchema() {
     return arrow::schema(
         { arrow::field("list_nullable", arrow::list(arrow::int32())) });
 }
 
-std::shared_ptr<arrow::Schema> makeStringSchema()
-{
+std::shared_ptr<arrow::Schema> makeStringSchema() {
     return arrow::schema({
         arrow::field("strings", arrow::utf8()),
         arrow::field("bytes", arrow::binary()),
     });
 }
 
-std::shared_ptr<arrow::Schema> makeDateTimeSchema()
-{
+std::shared_ptr<arrow::Schema> makeDateTimeSchema() {
     return arrow::schema({
         arrow::field("time32ms", arrow::time32(arrow::TimeUnit::MILLI)),
         arrow::field("time32s", arrow::time32(arrow::TimeUnit::SECOND)),
@@ -109,8 +99,7 @@ std::shared_ptr<arrow::Schema> makeDateTimeSchema()
     });
 }
 
-std::shared_ptr<arrow::Schema> makeIntervalSchema()
-{
+std::shared_ptr<arrow::Schema> makeIntervalSchema() {
     return arrow::schema({
         arrow::field("months", arrow::month_interval()),
         arrow::field("days", arrow::day_time_interval()),
@@ -118,8 +107,7 @@ std::shared_ptr<arrow::Schema> makeIntervalSchema()
     });
 }
 
-std::shared_ptr<arrow::Schema> makeDurationSchema()
-{
+std::shared_ptr<arrow::Schema> makeDurationSchema() {
     return arrow::schema({
         arrow::field("durations_s", arrow::duration(arrow::TimeUnit::SECOND)),
         arrow::field("durations_ms", arrow::duration(arrow::TimeUnit::MILLI)),
@@ -128,21 +116,20 @@ std::shared_ptr<arrow::Schema> makeDurationSchema()
     });
 }
 
-std::shared_ptr<arrow::Schema> makeMapSchema()
-{
+std::shared_ptr<arrow::Schema> makeMapSchema() {
     return arrow::schema({
         arrow::field("map_int_utf8",
                      arrow::map(arrow::int32(), arrow::utf8(), true)),
     });
 }
 
-std::shared_ptr<arrow::Schema> makeExtensionSchema()
-{
-    return arrow::schema({arrow::field("uuid", arrow::uuid())});
+std::shared_ptr<arrow::Schema> makeExtensionSchema() {
+    return arrow::schema({ arrow::field("uuid", arrow::uuid()) });
 }
 
 std::unordered_map<std::string, std::shared_ptr<arrow::Schema>> GetTestData() {
-    static std::unordered_map<std::string, std::shared_ptr<arrow::Schema>> hashMap{};
+    static std::unordered_map<std::string, std::shared_ptr<arrow::Schema>>
+        hashMap{};
     hashMap["nulls"] = makeNullSchema();
     hashMap["primitives"] = makePrimitiveSchema();
     hashMap["structs"] = makeStructSchema();
