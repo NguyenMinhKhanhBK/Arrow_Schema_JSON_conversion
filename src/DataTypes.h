@@ -40,7 +40,7 @@ public:
             { "name", mName },
             { "isSigned", mSigned },
             { "bitWidth", mBitWidth },
-            //{"children", {{}}},
+            { "unit", mUnit },
         };
     }
 

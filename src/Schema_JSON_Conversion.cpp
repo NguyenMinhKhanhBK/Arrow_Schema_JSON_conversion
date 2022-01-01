@@ -4,14 +4,19 @@
 #include <arrow/util/key_value_metadata.h>
 #include <arrow/extension_type.h>
 
+using json = nlohmann::json;
 
-const json marshalJSON(const std::shared_ptr<arrow::Field> field) {
-    json result;
+static arrow::Result<json> marshalJSON(const std::shared_ptr<arrow::Field>& field);
+static arrow::Result<std::shared_ptr<arrow::Field>> unmarshalJSON(const json& jsonObj);
+
+static arrow::Result<json> marshalJSON(const std::shared_ptr<arrow::Field>& field) {
+    json result{};
     std::shared_ptr<IDataType> type;
     auto fieldType = field->type();
 
     result["nullable"] = field->nullable();
 
+    // Handle field's metadata
     if (field->HasMetadata()) {
         auto metadata = field->metadata();
         for (int i = 0; i < metadata->size(); i++) {
@@ -22,6 +27,7 @@ const json marshalJSON(const std::shared_ptr<arrow::Field> field) {
         }
     }
 
+    // Handle user-defined type
     if (fieldType->id() == arrow::Type::EXTENSION) {
         auto extType = static_cast<const arrow::ExtensionType*>(fieldType.get());
         result["metadata"].push_back(
@@ -83,7 +89,7 @@ const json marshalJSON(const std::shared_ptr<arrow::Field> field) {
         case arrow::Type::BINARY:
             type = std::make_shared<NameJSON>(datatype::kBinaryType);
             break;
-        case arrow::Type::FIXED_SIZE_BINARY: 
+        case arrow::Type::FIXED_SIZE_BINARY:
         {
             auto byte_width = static_cast<const arrow::FixedSizeBinaryType*>(fieldType.get())->byte_width();
             type = std::make_shared<ByteWidthJSON>(datatype::kFixedSizeBinaryType, byte_width);
@@ -114,7 +120,7 @@ const json marshalJSON(const std::shared_ptr<arrow::Field> field) {
                     type = std::make_shared<UnitZoneJSON>(datatype::kTimestampType, datatype::kNanosecondUnit, timezone);
                     break;
                 default:
-                    break;
+                    return arrow::Status::Invalid("unsupported unit");
             }
             break;
         }
@@ -130,7 +136,7 @@ const json marshalJSON(const std::shared_ptr<arrow::Field> field) {
                     type = std::make_shared<BitWidthJSON>(datatype::kTimeType, false, bitWidth, datatype::kMillisecondUnit);
                     break;
                 default:
-                    break;
+                    return arrow::Status::Invalid("unsupported unit");
             }
             break;
         }
@@ -146,7 +152,7 @@ const json marshalJSON(const std::shared_ptr<arrow::Field> field) {
                     type = std::make_shared<BitWidthJSON>(datatype::kTimeType, false, bitWidth, datatype::kNanosecondUnit);
                     break;
                 default:
-                    break;
+                    return arrow::Status::Invalid("unsupported unit");
             }
             break;
         }
@@ -169,7 +175,11 @@ const json marshalJSON(const std::shared_ptr<arrow::Field> field) {
             type = std::make_shared<NameJSON>(datatype::kListType);
             auto listType = static_cast<const arrow::ListType*>(fieldType.get());
             for (int i = 0; i < listType->num_fields(); i++) {
-                result["children"].push_back(marshalJSON(listType->field(i)));
+                auto field = marshalJSON(listType->field(i));
+                if (!field.ok()) {
+                    return field.status();
+                }
+                result["children"].push_back(std::move(field).ValueOrDie());
             }
             break;
 
@@ -179,24 +189,31 @@ const json marshalJSON(const std::shared_ptr<arrow::Field> field) {
             type = std::make_shared<NameJSON>(datatype::kStructType);
             auto structType = static_cast<const arrow::StructType*>(fieldType.get());
             for (int i = 0; i < structType->num_fields(); i++) {
-                result["children"].push_back(marshalJSON(structType->field(i)));
+                auto field = marshalJSON(structType->field(i));
+                if (!field.ok()) {
+                    return field.status();
+                }
+                result["children"].push_back(std::move(field).ValueOrDie());
             }
             break;
 
         }
-        //case arrow::Type::SPARSE_UNION:
-        //case arrow::Type::DENSE_UNION:
-        //case arrow::Type::DICTIONARY:
         case arrow::Type::MAP:
         {
             auto mapType = static_cast<arrow::MapType*>(fieldType.get());
             auto keySorted = mapType->keys_sorted();
             type = std::make_shared<MapJSON>(datatype::kMapType, keySorted);
             auto keyJson = marshalJSON(mapType->key_field());
+            if (!keyJson.ok()) {
+                return arrow::Status::TypeError("failed to parse key");
+            }
             auto itemJson = marshalJSON(mapType->item_field());
+            if (!itemJson.ok()) {
+                return arrow::Status::TypeError("failed to parse value");
+            }
             result["children"].push_back({
-                { "key", keyJson },
-                { "item", itemJson },
+                { "key", std::move(keyJson).ValueOrDie()},
+                { "item", std::move(itemJson).ValueOrDie()},
             });
             break;
         }
@@ -217,7 +234,7 @@ const json marshalJSON(const std::shared_ptr<arrow::Field> field) {
                     type = std::make_shared<UnitZoneJSON>(datatype::kDurationType, datatype::kNanosecondUnit);
                     break;
                 default:
-                    break;
+                    return arrow::Status::Invalid("unsupported unit");
             }
             break;
         }
@@ -225,7 +242,7 @@ const json marshalJSON(const std::shared_ptr<arrow::Field> field) {
             type = std::make_shared<UnitZoneJSON>(datatype::kIntervalType, datatype::kMonthDayNanoIntervalUnit);
             break;
         default:
-            break;
+            return arrow::Status::Invalid("unsupported type");
     }
 
     result["name"] = field->name();
@@ -233,9 +250,10 @@ const json marshalJSON(const std::shared_ptr<arrow::Field> field) {
     return result;
 }
 
-const std::shared_ptr<arrow::Field> unmarshalJSON(const json& jsonField) {
+static arrow::Result<std::shared_ptr<arrow::Field>> unmarshalJSON(const json& jsonField) {
     std::shared_ptr<arrow::Field> resultField{};
     std::shared_ptr<arrow::DataType> resultType{};
+
     auto fieldName = jsonField.at("name").get<std::string>();
     auto typeNameStr = jsonField.at("type").at("name").get<std::string>();
     auto typeNameEnum = datatype::GetTypeFromString(typeNameStr);
@@ -266,6 +284,8 @@ const std::shared_ptr<arrow::Field> unmarshalJSON(const json& jsonField) {
                     case 64:
                         resultType = arrow::int64();
                         break;
+                    default:
+                        return arrow::Status::Invalid("unsupported bit width");
                 }
             } else {
                 switch(bitWidth) {
@@ -281,6 +301,8 @@ const std::shared_ptr<arrow::Field> unmarshalJSON(const json& jsonField) {
                     case 64:
                         resultType = arrow::uint64();
                         break;
+                    default:
+                        return arrow::Status::Invalid("unsupported bit width");
                 }
             }
 
@@ -292,17 +314,16 @@ const std::shared_ptr<arrow::Field> unmarshalJSON(const json& jsonField) {
             auto precisionEnum = datatype::GetPrecisionFromString(precisionStr);
             switch (precisionEnum) {
                 case datatype::PRECISION_HALF:
-                        resultType = arrow::float16();
+                    resultType = arrow::float16();
                     break;
                 case datatype::PRECISION_SINGLE:
-                        resultType = arrow::float32();
+                    resultType = arrow::float32();
                     break;
                 case datatype::PRECISION_DOUBLE:
-                        resultType = arrow::float64();
+                    resultType = arrow::float64();
                     break;
                 default:
-                    std::cout << "unknown precision\n";
-                    break;
+                    return arrow::Status::Invalid("unsupported precision");
             }
             break;
         }
@@ -324,8 +345,7 @@ const std::shared_ptr<arrow::Field> unmarshalJSON(const json& jsonField) {
                     resultType = arrow::date64();
                     break;
                 default:
-                    std::cout << "unsupported unit\n";
-                    break;
+                    return arrow::Status::Invalid("unsupported unit");
             }
             break;
         }
@@ -345,7 +365,7 @@ const std::shared_ptr<arrow::Field> unmarshalJSON(const json& jsonField) {
                             resultType = arrow::time32(arrow::TimeUnit::MILLI);
                             break;
                         default:
-                            break;
+                            return arrow::Status::Invalid("unsupported unit");
                     }
                     break;
                 case 64:
@@ -357,11 +377,11 @@ const std::shared_ptr<arrow::Field> unmarshalJSON(const json& jsonField) {
                             resultType = arrow::time64(arrow::TimeUnit::NANO);
                             break;
                         default:
-                            break;
+                            return arrow::Status::Invalid("unsupported unit");
                     }
                     break;
                 default:
-                    break;
+                    return arrow::Status::Invalid("unsupported bit width");
             }
             break;
         }
@@ -384,47 +404,51 @@ const std::shared_ptr<arrow::Field> unmarshalJSON(const json& jsonField) {
                     resultType = arrow::timestamp(arrow::TimeUnit::NANO, timezone);
                     break;
                 default:
-                    break;
+                    return arrow::Status::Invalid("unsupported unit");
             }
             break;
         }
         case datatype::TYPE_NAME_LIST:
         {
             if (!jsonField.contains("children")) {
-                std::cout << fieldName << " has no children\n";
-                // TODO Return error here?
-                resultType = arrow::list(arrow::null());
-                break;
+                return arrow::Status::Invalid("no children found");
             }
             auto field = unmarshalJSON(jsonField.at("children")[0]);
-            resultType = arrow::list(field);
+            if (!field.ok()) {
+                return field.status();
+            }
+            resultType = arrow::list(std::move(field).ValueOrDie());
             break;
         }
         case datatype::TYPE_NAME_MAP:
         {
             if (!jsonField.contains("children")) {
-                std::cout << fieldName << " has no children\n";
-                // TODO Return error here?
-                resultType = arrow::map(arrow::null(), arrow::null());
-                break;
+                return arrow::Status::Invalid("no children found");
             }
             auto keySorted = jsonField.at("type").at("keySorted").get<bool>();
             auto keyField = unmarshalJSON(jsonField.at("children")[0].at("key"));
+            if (!keyField.ok()) {
+                return keyField.status();
+            }
             auto itemField = unmarshalJSON(jsonField.at("children")[0].at("item"));
-            resultType = arrow::map(keyField->type(), itemField, keySorted);
+            if (!itemField.ok()) {
+                return itemField.status();
+            }
+            resultType = arrow::map(std::move(keyField).ValueOrDie()->type(), std::move(itemField).ValueOrDie(), keySorted);
             break;
         }
         case datatype::TYPE_NAME_STRUCT:
         {
             if (!jsonField.contains("children")) {
-                std::cout << fieldName << " has no children\n";
-                resultType = arrow::struct_({});
-                break;
+                return arrow::Status::Invalid("no children found");
             }
             std::vector<std::shared_ptr<arrow::Field>> fields{};
             for (auto childJson : jsonField.at("children")) {
                 auto childField = unmarshalJSON(childJson);
-                fields.push_back(childField);
+                if (!childField.ok()) {
+                    return childField.status();
+                }
+                fields.push_back(std::move(childField).ValueOrDie());
             }
             resultType = arrow::struct_(fields);
             break;
@@ -450,7 +474,7 @@ const std::shared_ptr<arrow::Field> unmarshalJSON(const json& jsonField) {
                     resultType = arrow::month_day_nano_interval();
                     break;
                 default:
-                    break;
+                    return arrow::Status::Invalid("unsupported unit");
             }
             break;
         }
@@ -472,7 +496,7 @@ const std::shared_ptr<arrow::Field> unmarshalJSON(const json& jsonField) {
                     resultType = arrow::duration(arrow::TimeUnit::NANO);
                     break;
                 default:
-                    break;
+                    return arrow::Status::Invalid("unsupported unit");
             }
             break;
         }
@@ -484,8 +508,7 @@ const std::shared_ptr<arrow::Field> unmarshalJSON(const json& jsonField) {
             break;
         }
         default:
-            std::cout << "unknown type: " << fieldName << std::endl;
-            break;
+            return arrow::Status::Invalid("unsupported type");
     }
 
     // Handle metadata
@@ -543,9 +566,7 @@ const std::shared_ptr<arrow::Field> unmarshalJSON(const json& jsonField) {
     return arrow::field(fieldName, resultType);
 }
 
-const json SchemaJSONConversion::ToJson(
-    const std::shared_ptr<arrow::Schema>& schema) const
-{
+arrow::Result<json> converter::SchemaToJSON(const std::shared_ptr<arrow::Schema> &schema) {
     json result;
 
     if (schema->HasMetadata()) {
@@ -560,23 +581,26 @@ const json SchemaJSONConversion::ToJson(
 
     for (int i = 0; i < schema->num_fields(); i++) {
         auto j_field = marshalJSON(schema->field(i));
-        result["schema"]["fields"].push_back(j_field);
+        if (!j_field.ok()) {
+            return j_field.status();
+        }
+        result["schema"]["fields"].push_back(std::move(j_field).ValueOrDie());
     }
 
     return result;
 }
 
-const std::shared_ptr<arrow::Schema> SchemaJSONConversion::ToSchema(
-    const json& js) const
-{
-    auto schemaJson = js.at("schema");
+arrow::Result<std::shared_ptr<arrow::Schema>> converter::JSONToSchema(const json &jsonObj) {
+    auto schemaJson = jsonObj.at("schema");
     std::vector<std::shared_ptr<arrow::Field>> fields{};
 
     for (auto fieldJson : schemaJson.at("fields")) {
         auto field = unmarshalJSON(fieldJson);
-        fields.push_back(field);
+        if (!field.ok()) {
+            return field.status();
+        }
+        fields.push_back(std::move(field).ValueOrDie());
     }
-
 
     if (!schemaJson.contains("metadata")) {
         return arrow::schema(fields);

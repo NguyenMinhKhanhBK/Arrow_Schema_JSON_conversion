@@ -1,49 +1,39 @@
 #include "Schema_JSON_Conversion.h"
-#include <arrow/extension_type.h>
-#include <arrow/testing/extension_type.h>
 #include <arrow/type.h>
-#include <arrow/util/key_value_metadata.h>
-#include <arrow/util/logging.h>
 #include <gtest/gtest.h>
 #include <iomanip>
 #include <nlohmann/json.hpp>
+#include "helper.h"
+
 
 using json = nlohmann::json;
 
-std::shared_ptr<arrow::DataType> arrow::uuid()
-{
-    return std::make_shared<arrow::UuidType>();
-}
+TEST(SchemaJSON, AllTestCases) {
+    auto testData = helper::GetTestData();
+    for (const auto& data : testData) {
+        std::cout << "Running test " << data.first << std::endl;
+        auto schema = data.second;
 
-bool arrow::UuidType::ExtensionEquals(const ExtensionType& other) const
-{
-    return (other.extension_name() == this->extension_name());
-}
+        // convert schema to JSON
+        auto schemaJson = converter::SchemaToJSON(schema);
+        ASSERT_TRUE(schemaJson.ok());
 
-std::shared_ptr<arrow::Array> arrow::UuidType::MakeArray(
-    std::shared_ptr<ArrayData> data) const
-{
-    DCHECK_EQ(data->type->id(), Type::EXTENSION);
-    DCHECK_EQ("uuid",
-              static_cast<const ExtensionType&>(*data->type).extension_name());
-    return std::make_shared<UuidArray>(data);
-}
+        // convert the newly created JSON to new schema
+        auto newSchema = converter::JSONToSchema(schemaJson.ValueOrDie());
+        ASSERT_TRUE(newSchema.ok());
 
-arrow::Result<std::shared_ptr<arrow::DataType>> arrow::UuidType::Deserialize(
-    std::shared_ptr<DataType> storage_type,
-    const std::string& serialized) const
-{
-    if (serialized != "uuid-serialized") {
-        return Status::Invalid(
-            "Type identifier did not match: '", serialized, "'");
+        // check if both schemas are the same
+        schema->Equals(newSchema.ValueOrDie());
+
+        // convert new schema to JSON
+        auto newJson = converter::SchemaToJSON(newSchema.ValueOrDie());
+        ASSERT_TRUE(newJson.ok());
+
+        ASSERT_TRUE(schemaJson.ValueOrDie() == newJson.ValueOrDie());
     }
-    if (!storage_type->Equals(*fixed_size_binary(16))) {
-        return Status::Invalid("Invalid storage type for UuidType: ",
-                               storage_type->ToString());
-    }
-    return std::make_shared<UuidType>();
-}
+};
 
+/*
 TEST(SchemaToJSON, BasicTypes)
 {
     GTEST_SKIP();
@@ -88,11 +78,10 @@ TEST(SchemaToJSON, BasicTypes)
         },
     };
 
-    SchemaJSONConversion convertor{};
-    auto actual = convertor.ToJson(schema);
+    auto actual = converter::SchemaToJSON(schema);
 
     // std::cout << std::setw(4) << expected << std::endl;
-    std::cout << std::setw(4) << actual << std::endl;
+    std::cout << std::setw(4) << std::move(actual).ValueOrDie() << std::endl;
 }
 
 TEST(JSONToSchema, BasicTest) {
@@ -107,12 +96,11 @@ TEST(JSONToSchema, BasicTest) {
             ->WithMetadata(arrow::KeyValueMetadata::Make(
                 { "key1", "key2", "key3" }, { "value1", "value2", "value3" }));
 
-    SchemaJSONConversion convertor{};
-    auto js = convertor.ToJson(schema);
+    auto js = converter::SchemaToJSON(schema).ValueOrDie();
     std::cout << "Origin JSON\n";
     std::cout << std::setw(4) << js << std::endl;
-    auto newSchema = convertor.ToSchema(js);
-    auto newJs = convertor.ToJson(newSchema);
+    auto newSchema = converter::JSONToSchema(js).ValueOrDie();
+    auto newJs = converter::SchemaToJSON(newSchema).ValueOrDie();
     std::cout << "New JSON\n";
     std::cout << std::setw(4) << js << std::endl;
     ASSERT_EQ(js, newJs);
@@ -125,8 +113,7 @@ TEST(SchemaToJSON, ListType) {
     auto listField2 = arrow::field("ListField1", arrow::list(arrow::field("ChildField", arrow::utf8())));
     auto schema = arrow::schema({listField1, listField2});
 
-    SchemaJSONConversion convertor{};
-    auto js = convertor.ToJson(schema);
+    auto js = converter::SchemaToJSON(schema).ValueOrDie();
     std::cout << std::setw(4) << js << std::endl;
 }
 
@@ -144,8 +131,7 @@ TEST(SchemaToJSON, StructType)
                                arrow::field("ChildOfChild", arrow::int64()),
                            })) })) });
 
-    SchemaJSONConversion convertor{};
-    auto js = convertor.ToJson(schema);
+    auto js = converter::SchemaToJSON(schema).ValueOrDie();
     std::cout << "Original: \n" << std::setw(4) << js << std::endl;
 }
 
@@ -163,8 +149,7 @@ TEST(SchemaToJSON, MapType) {
                        }))),
     });
 
-    SchemaJSONConversion convertor{};
-    auto js = convertor.ToJson(schema);
+    auto js = converter::SchemaToJSON(schema).ValueOrDie();
     std::cout << std::setw(4) << js << std::endl;
 }
 
@@ -182,25 +167,24 @@ TEST(JSONToSchema, StructTest)
                   arrow::struct_(
                       { arrow::field("ChildInt", arrow::uint16()),
                         arrow::field("ChildFloat", arrow::float64()) })) })) });
-    SchemaJSONConversion convertor{};
-    auto originalJson = convertor.ToJson(schema);
-    auto newSchema = convertor.ToSchema(originalJson);
-    std::cout << "New Json\n" << std::setw(4) << convertor.ToJson(newSchema) << std::endl;
+    auto originalJson = converter::SchemaToJSON(schema).ValueOrDie();
+    auto newSchema = converter::JSONToSchema(originalJson).ValueOrDie();
+    std::cout << "New Json\n" << std::setw(4) << converter::SchemaToJSON(newSchema).ValueOrDie() << std::endl;
     ASSERT_TRUE(newSchema->Equals(schema));
     ASSERT_TRUE(schema->Equals(newSchema));
-    // auto newJson = convertor.ToJson(newSchema);
 }
 
 TEST(JSONToSchema, MapTest)
 {
+    GTEST_SKIP();
     auto schema = arrow::schema({
         arrow::field("MapField", arrow::map(arrow::int16(), arrow::utf8())),
     });
-    SchemaJSONConversion convertor{};
-    auto originalJson = convertor.ToJson(schema);
-    auto newSchema = convertor.ToSchema(originalJson);
-    std::cout << "New Json\n" << std::setw(4) << convertor.ToJson(newSchema) << std::endl;
+    auto originalJson = converter::SchemaToJSON(schema).ValueOrDie();
+    auto newSchema = converter::JSONToSchema(originalJson).ValueOrDie();
+    std::cout << "New Json\n" << std::setw(4) << converter::SchemaToJSON(newSchema).ValueOrDie() << std::endl;
     ASSERT_TRUE(newSchema->Equals(schema));
     ASSERT_TRUE(schema->Equals(newSchema));
     // auto newJson = convertor.ToJson(newSchema);
 }
+*/

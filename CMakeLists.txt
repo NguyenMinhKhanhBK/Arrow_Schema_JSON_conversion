@@ -46,5 +46,5 @@ find_package(GTest REQUIRED)
 add_executable(Test
     test/test.cpp
 )
-target_include_directories(Test SYSTEM PUBLIC src/)
+target_include_directories(Test SYSTEM PUBLIC src/ test/)
 target_link_libraries(Test GTest::GTest GTest::Main arrow_shared ${SCHEMA_JSON_LIB})
