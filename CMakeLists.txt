@@ -16,6 +16,8 @@ set(PUBLIC_HEADERS
     src/Schema_JSON_Conversion.h
 )
 
+include_directories(include)
+
 set(SOURCES
     src/Schema_JSON_Conversion.cpp
     src/IDataType.h
