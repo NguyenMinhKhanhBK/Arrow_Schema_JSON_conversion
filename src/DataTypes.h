@@ -289,7 +289,7 @@ enum IntervalUnit {
     INTERVAL_UNIT_MONTH_DAY_NANO,
 };
 
-IntervalUnit GetIntervalUnitFromString(const std::string unit) {
+IntervalUnit GetIntervalUnitFromString(const std::string& unit) {
     static const std::unordered_map<std::string, IntervalUnit> hashMap {
         {kYearMonthIntervalUnit, INTERVAL_UNIT_YEAR_MONTH},
         {kDayTimeIntervalUnit, INTERVAL_UNIT_DAY_TIME},
