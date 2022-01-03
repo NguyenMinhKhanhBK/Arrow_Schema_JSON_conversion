@@ -76,7 +76,7 @@ docker run -it --rm json_schema_image /bin/bash
 
 ```
 sudo apt update
-sudo apt install build-essential cmake wget cppcheck
+sudo apt install build-essential cmake wget 
 ```
 - Install arrow library
 
@@ -86,6 +86,11 @@ wget https://apache.jfrog.io/artifactory/arrow/$(lsb_release --id --short | tr '
 sudo apt install -y -V ./apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb
 sudo apt update
 sudo apt install -y -V libarrow-dev
+```
+- Install gtest and cppcheck
+
+```
+sudo apt install libgtest-dev cppcheck
 ```
 - Clone source code, execute build script then run unittest as well as cppcheck
 
