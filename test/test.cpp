@@ -9,6 +9,9 @@
 
 using json = nlohmann::json;
 
+/**
+ * Test all basic data types. See helper::GetTestData() for more details
+ */
 TEST(SchemaJSON, AllTestCases) {
     auto testData = helper::GetTestData();
     for (const auto& data : testData) {

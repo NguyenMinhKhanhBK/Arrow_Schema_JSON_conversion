@@ -5,6 +5,13 @@
 
 #include "IDataType.h"
 
+/**
+ *
+ * NameJSON only includes field name and uses for NULL, BOOL, STRING, BINARY,
+ * LIST, STRUCT types
+ *
+ * mName: field name
+ */
 class NameJSON : public IDataType {
 public:
     NameJSON(const std::string& name)
@@ -22,6 +29,14 @@ private:
     std::string mName{};
 };
 
+/**
+ * BitWidthJSON uses for integer (INT8/ UINT8, INT16/ UINT16, INT32/ UINT32,
+ * INT64/ UINT64) and time (TIME32, TIME64) types
+ *
+ * mName: field name
+ * mSigned: signed or unsigned integer
+ * mBitWidth: bit width, only supports 8, 16, 32 and 64 bits
+ */
 class BitWidthJSON : public IDataType {
 public:
     BitWidthJSON(const std::string& name,
@@ -51,6 +66,15 @@ private:
     std::string mUnit{};
 };
 
+/**
+ * FloatJSON uses for floating point type (FLOAT16, FLOAT32, FLOAT64)
+ *
+ * mName: field name
+ * mPrecision: floating point precision
+ *      HALF precision for FLOAT16
+ *      SINGLE precision for FLOAT32
+ *      DOUBLE precision for FLOAT64
+ */
 class FloatJSON : public IDataType {
 public:
     FloatJSON(const std::string& name, const std::string& precision)
@@ -71,6 +95,14 @@ private:
     std::string mPrecision{};
 };
 
+/**
+ * UnitZoneJSON uses for timezone related types (DATE32, DATE64, TIMESTAMP,
+ * INTERVAL_MONTHS, INTERVAL_DAY_TIME)
+ *
+ * mName: field name
+ * mUnit: time unit (such as second, millisecond, microsecond, nanosecond)
+ * mTimeZone: timezone
+ */
 class UnitZoneJSON : public IDataType {
 public:
     UnitZoneJSON(const std::string& name,
@@ -96,6 +128,13 @@ private:
     std::string mTimeZone{};
 };
 
+/**
+ * DecimalJSON uses for decimal type
+ *
+ * mName: field name
+ * mScale: scale number
+ * mPrecision: number of precision
+ */
 class DecimalJSON : public IDataType {
 public:
     DecimalJSON(const std::string& name, int scale, int precision)
@@ -119,6 +158,12 @@ private:
     int mPrecision{};
 };
 
+/**
+ * ByteWidthJSON uses for FIXED_SIZE_BINARY type
+ *
+ * mName: field name
+ * mByteWidth: byte width
+ */
 class ByteWidthJSON : public IDataType {
 public:
     ByteWidthJSON(const std::string& name, int byteWidth)
@@ -139,6 +184,12 @@ private:
     int mByteWidth{};
 };
 
+/**
+ * MapJSON uses for MAP type
+ *
+ * mName: field name
+ * mKeySorted: key is sorted or not
+ */
 class MapJSON : public IDataType {
 public:
     MapJSON(const std::string& name, bool keySorted = false)
@@ -301,6 +352,8 @@ inline IntervalUnit GetIntervalUnitFromString(const std::string& unit) {
     return INTERVAL_UNIT_NOT_SET;
 }
 
+// These macros are for extension types. Refer
+// https://github.com/apache/arrow/blob/8e43f23dcc6a9e630516228f110c48b64d13cec6/cpp/src/arrow/extension_type.cc#L166-L167
 #define EXTENSION_TYPE_KEY_NAME "ARROW:extension:name"
 #define EXTENSION_METADATA_KEY_NAME "ARROW:extension:metadata"
 

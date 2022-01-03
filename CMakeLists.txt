@@ -13,7 +13,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(SCHEMA_JSON_LIB "schema-json-lib")
 
 set(PUBLIC_HEADERS 
-    src/Schema_JSON_Conversion.h
+    include/Schema_JSON_Conversion.h
 )
 
 include_directories(include)

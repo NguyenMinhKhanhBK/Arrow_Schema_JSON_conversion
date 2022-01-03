@@ -5,6 +5,12 @@
 
 #include "DataTypes.h"
 
+/**
+ * @brief Helper function converts a json object into arrow::Field
+ * @param[in] schema Input json object
+ * @return arrow::Result contains the converted arrow::Field if successful,
+ * descriptive status otherwise
+ */
 static arrow::Result<std::shared_ptr<arrow::Field>> unmarshalJSON(
     const json& jsonObj);
 

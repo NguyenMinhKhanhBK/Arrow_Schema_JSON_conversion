@@ -5,6 +5,12 @@
 
 using json = nlohmann::json;
 
+/**
+ * @brief Helper function converts an arrow::Field into json
+ * @param[in] schema Input field object
+ * @return arrow::Result contains the converted json if successful, descriptive
+ * status otherwise
+ */
 static arrow::Result<json> marshalJSON(
     const std::shared_ptr<arrow::Field>& field);
 

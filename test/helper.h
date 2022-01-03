@@ -6,6 +6,12 @@
 #include <arrow/util/key_value_metadata.h>
 #include <arrow/util/logging.h>
 
+/**
+ * Implementation for arrow::UuidType - a kind of user-defined type (extension
+ * type). These functions are basically copied from
+ * https://github.com/apache/arrow/blob/master/cpp/src/arrow/testing/gtest_util.cc#L756-L776
+ */
+
 std::shared_ptr<arrow::DataType> arrow::uuid() {
     return std::make_shared<arrow::UuidType>();
 }
@@ -36,14 +42,21 @@ arrow::Result<std::shared_ptr<arrow::DataType>> arrow::UuidType::Deserialize(
     return std::make_shared<UuidType>();
 }
 
+/**
+ * helper namespace contains util functions to make `test.cpp` as clean as
+ * possible
+ */
 namespace helper {
-std::shared_ptr<arrow::Schema> makeNullSchema() {
+
+// Null type with metadata
+static std::shared_ptr<arrow::Schema> makeNullSchema() {
     return arrow::schema({ arrow::field("nulls", arrow::null()) })
         ->WithMetadata(arrow::KeyValueMetadata::Make({ "k1", "k2", "k3" },
                                                      { "v1", "v2", "v3" }));
 }
 
-std::shared_ptr<arrow::Schema> makePrimitiveSchema() {
+// Primitive (int, float, dec) types with metadata
+static std::shared_ptr<arrow::Schema> makePrimitiveSchema() {
     return arrow::schema({
                              arrow::field("bools", arrow::boolean()),
                              arrow::field("int8s", arrow::int8()),
@@ -63,28 +76,31 @@ std::shared_ptr<arrow::Schema> makePrimitiveSchema() {
                                                      { "v1", "v2", "v3" }));
 }
 
-std::shared_ptr<arrow::Schema> makeStructSchema() {
-    return arrow::schema({ arrow::field(
-        "struct_nullable",
-        arrow::struct_({
-            arrow::field("f1", arrow::int32()), // nullable = false
-            arrow::field("f2", arrow::utf8()),  // nullable = false
-        })) });
+// Simple struct type
+static std::shared_ptr<arrow::Schema> makeStructSchema() {
+    return arrow::schema({ arrow::field("struct_nullable",
+                                        arrow::struct_({
+                                            arrow::field("f1", arrow::int32()),
+                                            arrow::field("f2", arrow::utf8()),
+                                        })) });
 }
 
-std::shared_ptr<arrow::Schema> makeListSchema() {
+// Simple list type
+static std::shared_ptr<arrow::Schema> makeListSchema() {
     return arrow::schema(
         { arrow::field("list_nullable", arrow::list(arrow::int32())) });
 }
 
-std::shared_ptr<arrow::Schema> makeStringSchema() {
+// String and binary types
+static std::shared_ptr<arrow::Schema> makeStringSchema() {
     return arrow::schema({
         arrow::field("strings", arrow::utf8()),
         arrow::field("bytes", arrow::binary()),
     });
 }
 
-std::shared_ptr<arrow::Schema> makeDateTimeSchema() {
+// Related datetime types
+static std::shared_ptr<arrow::Schema> makeDateTimeSchema() {
     return arrow::schema({
         arrow::field("time32ms", arrow::time32(arrow::TimeUnit::MILLI)),
         arrow::field("time32s", arrow::time32(arrow::TimeUnit::SECOND)),
@@ -99,7 +115,8 @@ std::shared_ptr<arrow::Schema> makeDateTimeSchema() {
     });
 }
 
-std::shared_ptr<arrow::Schema> makeIntervalSchema() {
+// Related interval types
+static std::shared_ptr<arrow::Schema> makeIntervalSchema() {
     return arrow::schema({
         arrow::field("months", arrow::month_interval()),
         arrow::field("days", arrow::day_time_interval()),
@@ -107,7 +124,8 @@ std::shared_ptr<arrow::Schema> makeIntervalSchema() {
     });
 }
 
-std::shared_ptr<arrow::Schema> makeDurationSchema() {
+// Duration type with different units
+static std::shared_ptr<arrow::Schema> makeDurationSchema() {
     return arrow::schema({
         arrow::field("durations_s", arrow::duration(arrow::TimeUnit::SECOND)),
         arrow::field("durations_ms", arrow::duration(arrow::TimeUnit::MILLI)),
@@ -116,18 +134,26 @@ std::shared_ptr<arrow::Schema> makeDurationSchema() {
     });
 }
 
-std::shared_ptr<arrow::Schema> makeMapSchema() {
+// Simple hash map type
+static std::shared_ptr<arrow::Schema> makeMapSchema() {
     return arrow::schema({
         arrow::field("map_int_utf8",
                      arrow::map(arrow::int32(), arrow::utf8(), true)),
     });
 }
 
-std::shared_ptr<arrow::Schema> makeExtensionSchema() {
+// Uuid extension type
+static std::shared_ptr<arrow::Schema> makeExtensionSchema() {
     return arrow::schema({ arrow::field("uuid", arrow::uuid()) });
 }
 
-std::unordered_map<std::string, std::shared_ptr<arrow::Schema>> GetTestData() {
+/**
+ * @brief Get data for all testcases
+ * @return Hashmap (string -> arrow::Schema) contains all basic types that arrow
+ * library supports
+ */
+inline std::unordered_map<std::string, std::shared_ptr<arrow::Schema>>
+GetTestData() {
     static std::unordered_map<std::string, std::shared_ptr<arrow::Schema>>
         hashMap{};
     hashMap["nulls"] = makeNullSchema();

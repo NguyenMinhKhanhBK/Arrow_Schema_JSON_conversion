@@ -9,6 +9,10 @@ public:
     IDataType() = default;
     virtual ~IDataType() = default;
 
+    /**
+     * @brief MarshalJSON converts the inherited class (type) into Json format
+     * @return nlohmann::json object represents the inherited class
+     */
     virtual const json MarshalJSON() = 0;
 };
 
