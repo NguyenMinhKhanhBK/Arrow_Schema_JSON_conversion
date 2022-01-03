@@ -197,7 +197,7 @@ enum TypeName {
     TYPE_NAME_DURATION,
 };
 
-TypeName GetTypeFromString(const std::string& type) {
+inline TypeName GetTypeFromString(const std::string& type) {
     static const std::unordered_map<std::string, TypeName> hashMap{
         { kNullType, TYPE_NAME_NULL },
         { kBoolType, TYPE_NAME_BOOL },
@@ -234,7 +234,7 @@ enum Precision {
     PRECISION_DOUBLE,
 };
 
-Precision GetPrecisionFromString(const std::string& precision) {
+inline Precision GetPrecisionFromString(const std::string& precision) {
     static const std::unordered_map<std::string, Precision> hashMap{
         { kPrecisionHalf, PRECISION_HALF },
         { kPrecisionSingle, PRECISION_SINGLE },
@@ -262,7 +262,7 @@ enum DateTimeUnit {
     DATE_TIME_UNIT_NANOSECOND,
 };
 
-DateTimeUnit GetUnitFromString(const std::string& unit) {
+inline DateTimeUnit GetUnitFromString(const std::string& unit) {
     static const std::unordered_map<std::string, DateTimeUnit> hashMap{
         { kDayUnit, DATE_TIME_UNIT_DAY },
         { kSecondUnit, DATE_TIME_UNIT_SECOND },
@@ -288,7 +288,7 @@ enum IntervalUnit {
     INTERVAL_UNIT_MONTH_DAY_NANO,
 };
 
-IntervalUnit GetIntervalUnitFromString(const std::string& unit) {
+inline IntervalUnit GetIntervalUnitFromString(const std::string& unit) {
     static const std::unordered_map<std::string, IntervalUnit> hashMap{
         { kYearMonthIntervalUnit, INTERVAL_UNIT_YEAR_MONTH },
         { kDayTimeIntervalUnit, INTERVAL_UNIT_DAY_TIME },

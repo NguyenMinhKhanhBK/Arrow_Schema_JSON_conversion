@@ -11,6 +11,7 @@ RUN apt update -y -q && \
         lsb-release \
         wget \
         libgtest-dev \
+        cppcheck \
         gnupg && \
     apt clean && rm -rf /var/lib/apt/lists*
 
