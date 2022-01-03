@@ -97,8 +97,7 @@ cd Arrow_Schema_JSON_conversion/
 ./run_cppcheck.sh
 ```
 
-## Detail implementation
-### JSON structure
+## JSON structures
 - `arrow::Schema`
 
 ```
