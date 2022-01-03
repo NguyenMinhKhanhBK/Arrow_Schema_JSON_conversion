@@ -81,7 +81,7 @@ sudo apt install build-essential cmake wget cppcheck
 - Install arrow library
 
 ```
-sudo apt install -y -V ca-certificates lsb-release wget
+sudo apt install -y -V ca-certificates lsb-release
 wget https://apache.jfrog.io/artifactory/arrow/$(lsb_release --id --short | tr 'A-Z' 'a-z')/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb
 sudo apt install -y -V ./apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb
 sudo apt update
