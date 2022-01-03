@@ -124,7 +124,7 @@ cd Arrow_Schema_JSON_conversion/
     }
 }
 ```
-<JSON_OF_FIELDS> is JSON format of `arrow::Field`, which is different depending on the data type that this field is holding
+`<JSON_OF_FIELDS>` is JSON format of `arrow::Field`, which is different depending on the data type that this field is holding
 - Nullable type
 ```
 {
